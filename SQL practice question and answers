@@ -197,3 +197,25 @@ last_name
 from patients
 join admissions on patients.patient_id = admissions.patient_id
 where admissions.diagnosis='Dementia'
+---- OR -----
+SELECT
+  patient_id,
+  first_name,
+  last_name
+FROM patients
+WHERE patient_id IN (
+    SELECT patient_id
+    FROM admissions
+    WHERE diagnosis = 'Dementia'
+  );
+------ OR -----
+SELECT
+  patient_id,
+  first_name,
+  last_name
+FROM patients p
+WHERE 'Dementia' IN (
+    SELECT diagnosis
+    FROM admissions
+    WHERE admissions.patient_id = p.patient_id
+  );
