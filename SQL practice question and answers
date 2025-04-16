@@ -446,4 +446,166 @@ WHERE
         CAST(attending_doctor_id AS VARCHAR) LIKE '%2%' 
         AND LEN(CAST(patient_id AS VARCHAR)) = 3
     );
+--------- OR --------
+SELECT
+  patient_id,
+  attending_doctor_id,
+  diagnosis
+FROM admissions
+WHERE
+  (
+    attending_doctor_id IN (1, 5, 19)
+    AND patient_id % 2 != 0
+  )
+  OR 
+  (
+    attending_doctor_id LIKE '%2%'
+    AND len(patient_id) = 3
+  )
+
+Show first_name, last_name, and the total number of admissions attended for each doctor. Every admission has been attended by a doctor.
+select first_name,
+ last_name,
+ count(*) as admissions_total
+ from admissions
+ join doctors on doctors.doctor_id = admissions.attending_doctor_id
+ group by attending_doctor_id
+----- OR -----
+SELECT
+  first_name,
+  last_name,
+  count(*) as admissions_total
+from admissions a
+  join doctors ph on ph.doctor_id = a.attending_doctor_id
+group by attending_doctor_id
+----- OR ------
+SELECT
+  first_name,
+  last_name,
+  count(*)
+from
+  doctors p,
+  admissions a
+where
+  a.attending_doctor_id = p.doctor_id
+group by p.doctor_id;
+
+For each doctor, display their id, full name, and the first and last admission date they attended.
+ select doctor_id,
+ concat(first_name, ' ', last_name) as full_name,
+ min(admission_date) as first_admission_date,
+ max(admission_date) As last_admission_date
+ from admissions
+ join doctors on doctors.doctor_id = admissions.attending_doctor_id
+ group by doctor_id
+------ OR ------
+select
+  doctor_id,
+  first_name || ' ' || last_name as full_name,
+  min(admission_date) as first_admission_date,
+  max(admission_date) as last_admission_date
+from admissions a
+  join doctors ph on a.attending_doctor_id = ph.doctor_id
+group by doctor_id;
+
+Display the total amount of patients for each province. Order by descending.
+SELECT
+  province_name,
+  COUNT(*) as patient_count
+FROM patients pa
+  join province_names pr on pr.province_id = pa.province_id
+group by pr.province_id
+order by patient_count desc;
+
+For every admission, display the patient's full name, their admission diagnosis, and their doctor's full name who diagnosed their problem.
+SELECT
+  CONCAT(patients.first_name, ' ', patients.last_name) as patient_name,
+  diagnosis,
+  CONCAT(doctors.first_name,' ',doctors.last_name) as doctor_name
+FROM patients
+  JOIN admissions ON admissions.patient_id = patients.patient_id
+  JOIN doctors ON doctors.doctor_id = admissions.attending_doctor_id;
+
+display the first name, last name and number of duplicate patients based on their first name and last name.
+Ex: A patient with an identical name can be considered a duplicate.
+select first_name,
+last_name,
+count(*) as num_of_duplicates
+from patients
+group by first_name, last_name
+having count(*) > 1;
+
+Display patient's full name,
+height in the units feet rounded to 1 decimal,
+weight in the unit pounds rounded to 0 decimals,
+birth_date,
+gender non abbreviated.
+
+Convert CM to feet by dividing by 30.48.
+Convert KG to pounds by multiplying by 2.205.
+select concat(first_name, ' ', last_name),
+round(height/30.48,1) as 'height "Feet"', 
+Round (weight*2.205, 0) as 'weight "Pounds"',
+birth_date, 
+case
+when gender = 'F' then 'FEMALE'
+else 'Male'
+end as gender_type
+from patients
+
+Show patient_id, first_name, last_name from patients whose does not have any records in the admissions table. 
+(Their patient_id does not exist in any admissions.patient_id rows.)
+select patient_id,first_name,last_name
+from patients
+where patient_id not in (select admissions.patient_id from admissions)
+----- OR ------
+SELECT
+  patients.patient_id,
+  first_name,
+  last_name
+from patients
+  left join admissions on patients.patient_id = admissions.patient_id
+where admissions.patient_id is NULL
+
+Display a single row with max_visits, min_visits, average_visits where the maximum, minimum and average number of admissions per day is calculated. 
+Average is rounded to 2 decimal places.
+select 
+	max(number_of_visits) as max_visits, 
+	min(number_of_visits) as min_visits, 
+  round(avg(number_of_visits),2) as average_visits 
+from (
+  select admission_date, count(*) as number_of_visits
+  from admissions 
+  group by admission_date
+)
+// We need to perform multiple operations like max, min, avg, therefore we have use multiple select statements.
+
+# Level - Hard
+
+Show all of the patients grouped into weight groups.
+Show the total amount of patients in each weight group.
+Order the list by the weight group decending.
+For example, if they weight 100 to 109 they are placed in the 100 weight group, 110-119 = 110 weight group, etc.
+
+SELECT
+  COUNT(*) AS patients_in_group,
+  FLOOR(weight / 10) * 10 AS weight_group
+FROM patients
+GROUP BY weight_group
+ORDER BY weight_group DESC;
+------ OR ------
+SELECT
+  TRUNCATE(weight, -1) AS weight_group,
+  count(*)
+FROM patients
+GROUP BY weight_group
+ORDER BY weight_group DESC;
+------ OR ------
+SELECT
+  count(patient_id),
+  weight - weight % 10 AS weight_group
+FROM patients
+GROUP BY weight_group
+ORDER BY weight_group DESC
+
 
